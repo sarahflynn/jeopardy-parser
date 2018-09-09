@@ -55,6 +55,7 @@ def main(args):
     for i, file_name in enumerate(glob(os.path.join(args.dir, "*.html")), 1):
         with open(os.path.abspath(file_name)) as f:
             parse_game(f, sql, i)
+            print "Parsing", file_name, "number", i, "of", NUMBER_OF_FILES
     if not args.stdout:
         sql.commit()
     print "All done"
@@ -98,7 +99,8 @@ def parse_round(bsoup, sql, rnd, gid, airdate):
     for a in r.find_all("td", class_="clue"):
         is_missing = True if not a.get_text().strip() else False
         if not is_missing:
-            value = a.find("td", class_=re.compile("clue_value")).get_text().lstrip("D: $")
+            value = a.find("td", class_=re.compile("clue_value")).get_text().lstrip("D: $").replace(",", "")
+            value = int(value)
             text = a.find("td", class_="clue_text").get_text()
             answer = BeautifulSoup(a.find("div", onmouseover=True).get("onmouseover"), "lxml")
             answer = answer.find("em", class_="correct_response").get_text()
@@ -152,7 +154,7 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--filename", dest="database",
                         metavar="<filename>",
                         help="the filename for the SQLite database",
-                        default="clues.db")
+                        default="clues8.db")
     parser.add_argument("--stdout",
                         help="output the clues to stdout and not a database",
                         action="store_true")

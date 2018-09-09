@@ -3,10 +3,12 @@
 
 import itertools
 import os
-import urllib2
+import urllib2 
 import time
-import futures as futures  # In Python 3 we can use "import concurrent.futures as futures"
+import concurrent.futures as futures  # In Python 3 we can use "import concurrent.futures as futures"
+import sys
 
+# current_working_directory = os.path.dirname(os.path.abspath(__file__))
 current_working_directory = os.path.dirname(os.path.abspath(__file__))
 archive_folder = os.path.join(current_working_directory, "j-archive")
 SECONDS_BETWEEN_REQUESTS = 5
@@ -16,20 +18,20 @@ try:
     import multiprocessing
     # Since it's a lot of IO let's double # of actual cores
     NUM_THREADS = multiprocessing.cpu_count() * 2
-    print 'Using {} threads'.format(NUM_THREADS)
+    print('Using {} threads'.format(NUM_THREADS))
 except (ImportError, NotImplementedError):
     pass
 
 
 def main():
     create_archive_dir()
-    print "Downloading game files"
+    print("Downloading game files")
     download_pages()
 
 
 def create_archive_dir():
     if not os.path.isdir(archive_folder):
-        print "Making %s" % archive_folder
+        print("Making %s" % archive_folder)
         os.mkdir(archive_folder)
 
 
@@ -41,12 +43,19 @@ def download_pages():
         while True:
             l = []
             for i in range(NUM_THREADS):
-                f = executor.submit(download_and_save_page, page)
-                l.append(f)
-                page += 1
+                try:
+                    f = executor.submit(download_and_save_page, page)
+                    l.append(f)
+                    page += 1
+                except:
+                    print('bad page', page)
             # Block and stop if we're done downloading the page
-            if not all(f.result() for f in l):
-                break
+            try:
+                if not all(f.result() for f in l):
+                    break
+            except:
+                passcd..
+                
 
 
 def download_and_save_page(page):
@@ -54,15 +63,15 @@ def download_and_save_page(page):
     destination_file_path = os.path.join(archive_folder, new_file_name)
     if not os.path.exists(destination_file_path):
         html = download_page(page)
-        if ERROR_MSG in html:
-            # Now we stop
-            print "Finished downloading. Now parse."
-            return False
-        elif html:
+        # if ERROR_MSG in html:
+        #     # Now we stop
+        #     print("Finished downloading. Now parse.")
+        #     return False
+        if html:
             save_file(html, destination_file_path)
             time.sleep(SECONDS_BETWEEN_REQUESTS)  # Remember to be kind to the server
     else:
-        print "Already downloaded %s" % destination_file_path
+        print("Already downloaded %s" % destination_file_path)
     return True
 
 
@@ -72,12 +81,12 @@ def download_page(page):
     try:
         response = urllib2.urlopen(url)
         if response.code == 200:
-            print "Downloading %s" % url
+            print("Downloading %s" % url)
             html = response.read()
         else:
-            print "Invalid URL: %s" % url
+            print("Invalid URL: %s" % url)
     except urllib2.HTTPError:
-        print "failed to open %s" % url
+        print("failed to open %s" % url)
     return html
 
 
@@ -86,7 +95,7 @@ def save_file(html, filename):
         with open(filename, 'w') as f:
             f.write(html)
     except IOError:
-        print "Couldn't write to file %s" % filename
+        print("Couldn't write to file %s" % filename)
 
 
 if __name__ == "__main__":
